@@ -1,0 +1,15 @@
+<div class="login-container">
+  <h2>Iniciar Sesión</h2>
+
+  <div class="p-field">
+    <label for="username">Usuario</label>
+    <input id="username" type="text" pInputText [(ngModel)]="username" placeholder="Usuario" />
+  </div>
+
+  <div class="p-field">
+    <label for="password">Contraseña</label>
+    <p-password id="password" [(ngModel)]="password" placeholder="Contraseña"></p-password>
+  </div>
+
+  <p-button label="Entrar" (onClick)="login()"></p-button>
+</div>

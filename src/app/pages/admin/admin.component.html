@@ -1,0 +1,22 @@
+<h2>Panel de Administrador</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Usuario</th>
+      <th>Status</th>
+      <th>Ubicación</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let delivery of deliveries" (click)="selectDelivery(delivery.userId)">
+      <td>{{ delivery.username }}</td>
+      <td>{{ delivery.status }}</td>
+      <td>{{ delivery.lat.toFixed(4) }}, {{ delivery.lng.toFixed(4) }}</td>
+      <td><button (click)="openAssignPackagesModal(delivery.userId); $event.stopPropagation()">Asignar</button></td>
+    </tr>
+  </tbody>
+</table>
+
+<div id="map" style="height: 500px; margin-top: 1rem;"></div>
