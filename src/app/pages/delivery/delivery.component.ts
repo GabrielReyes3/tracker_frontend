@@ -63,8 +63,8 @@ export class DeliveryComponent implements OnInit, OnDestroy {
 
     // Definir icono personalizado (ajusta la ruta a tu imagen en assets)
     this.customIcon = L.icon({
-      iconUrl: 'assets/marker.png',
-      iconSize: [32, 32],
+      iconUrl: 'assets/marker-icon.png',
+      iconSize: [22, 32],
       iconAnchor: [16, 32],
       popupAnchor: [0, -32],
       shadowUrl: '',
