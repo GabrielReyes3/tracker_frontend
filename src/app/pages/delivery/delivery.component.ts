@@ -1,18 +1,20 @@
 import { Component, OnDestroy, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { io, Socket } from 'socket.io-client';
-import { isPlatformBrowser } from '@angular/common';
+import { HeaderComponent } from "../../components/header.component";
 
 let L: any;
 
 @Component({
   selector: 'app-delivery',
   standalone: true,
-  imports: [],
+  imports: [CommonModule, HeaderComponent],
   templateUrl: './delivery.component.html',
   styleUrls: ['./delivery.component.scss']
 })
 export class DeliveryComponent implements OnInit, OnDestroy {
+  username: string = '';
   private intervalId: any;
   private socket: Socket;
 
@@ -22,11 +24,11 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   private polyline: any;
   private customIcon: any;
 
-  packages = [
-    { id: 1, description: 'Paquete 1', status: 'En tránsito' },
-    { id: 2, description: 'Paquete 2', status: 'En tránsito' },
-    { id: 3, description: 'Paquete 3', status: 'En tránsito' },
-  ];
+  packages: {
+    id: number;
+    address: string;
+    status: string;
+  }[] = [];
 
   constructor(
     private http: HttpClient,
@@ -41,11 +43,15 @@ export class DeliveryComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.username = localStorage.getItem('username') || '';
+
     const LModule = (await import('leaflet')).default;
     L = LModule;
 
     this.initMap();
     this.startSendingLocation();
+
+    this.loadPackages();
   }
 
   ngOnDestroy() {
@@ -54,14 +60,12 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   }
 
   initMap() {
-    // Centrar inicialmente en Querétaro con zoom 13
     this.map = L.map('map').setView([20.5888, -100.3899], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(this.map);
 
-    // Definir icono personalizado (ajusta la ruta a tu imagen en assets)
     this.customIcon = L.icon({
       iconUrl: 'assets/marker-icon.png',
       iconSize: [22, 32],
@@ -70,8 +74,6 @@ export class DeliveryComponent implements OnInit, OnDestroy {
       shadowUrl: '',
     });
 
-    // NO agregar marcador fijo aquí
-
     this.polyline = L.polyline([], { color: 'blue' }).addTo(this.map);
 
     console.log('Mapa inicializado:', this.map);
@@ -79,13 +81,11 @@ export class DeliveryComponent implements OnInit, OnDestroy {
 
   startSendingLocation() {
     if ('geolocation' in navigator) {
-      // Obtener ubicación inicial y centrar mapa + marcador
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
           this.updateMapPosition(latitude, longitude);
 
-          // Después de obtener la ubicación inicial, iniciar envío periódico cada 10s
           this.intervalId = setInterval(() => {
             navigator.geolocation.getCurrentPosition(
               (pos) => {
@@ -108,8 +108,6 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   }
 
   updateMapPosition(lat: number, lng: number) {
-    console.log('Actualizando posición:', lat, lng);
-
     if (this.marker) {
       this.marker.setLatLng([lat, lng]);
     } else {
@@ -122,6 +120,8 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   }
 
   sendLocationToBackend(lat: number, lng: number) {
+    if (!isPlatformBrowser(this.platformId)) return;
+
     const token = localStorage.getItem('token');
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`,
@@ -135,6 +135,8 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   }
 
   emitLocationViaSocket(lat: number, lng: number) {
+    if (!isPlatformBrowser(this.platformId)) return;
+
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const username = user.username || 'Anónimo';
     const userId = user.id;
@@ -147,7 +149,28 @@ export class DeliveryComponent implements OnInit, OnDestroy {
     });
   }
 
+  loadPackages() {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    const token = localStorage.getItem('token');
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    this.http.get<{ id: number; address: string; status: string }[]>('http://localhost:3000/api/packages/my', { headers }).subscribe({
+      next: (data) => {
+        console.log('Paquetes cargados:', data);
+        this.packages = data;
+      },
+      error: (err) => {
+        console.error('Error al cargar paquetes:', err);
+      }
+    });
+  }
+
   updatePackageStatus(pkgId: number, event: Event) {
+    if (!isPlatformBrowser(this.platformId)) return;
+
     const selectElement = event.target as HTMLSelectElement;
     const newStatus = selectElement.value;
 
@@ -155,6 +178,17 @@ export class DeliveryComponent implements OnInit, OnDestroy {
     if (pkg) {
       pkg.status = newStatus;
       console.log(`Paquete ${pkgId} actualizado a estado: ${newStatus}`);
+
+      const token = localStorage.getItem('token');
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      });
+
+      this.http.put('http://localhost:3000/api/packages/status', { packageId: pkgId, status: newStatus }, { headers }).subscribe({
+        next: () => console.log('Estado actualizado en backend'),
+        error: err => console.error('Error al actualizar estado en backend:', err)
+      });
     }
   }
 }

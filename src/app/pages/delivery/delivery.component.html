@@ -1,49 +1,34 @@
-<h2>Panel de Delivery</h2>
-<p>Compartiendo ubicación cada 10 segundos...</p>
+<div class="delivery-wrapper">
+  <div class="background-overlay"></div>
 
-<div id="map" style="height: 400px; width: 100%; margin-bottom: 1rem;"></div>
+  <div class="delivery-card">
+    <h2>Panel de Delivery</h2>
+    <app-header></app-header>
+    <p>Compartiendo ubicación cada 10 segundos...</p>
 
-<table>
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Descripción</th>
-      <th>Status</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>{{ packages[0].id }}</td>
-      <td>{{ packages[0].description }}</td>
-      <td>
-        <select [value]="packages[0].status" (change)="updatePackageStatus(packages[0].id, $event)">
-          <option>En tránsito</option>
-          <option>Entregado</option>
-          <option>Regresado</option>
-        </select>
-      </td>
-    </tr>
-    <tr>
-      <td>{{ packages[1].id }}</td>
-      <td>{{ packages[1].description }}</td>
-      <td>
-        <select [value]="packages[1].status" (change)="updatePackageStatus(packages[1].id, $event)">
-          <option>En tránsito</option>
-          <option>Entregado</option>
-          <option>Regresado</option>
-        </select>
-      </td>
-    </tr>
-    <tr>
-      <td>{{ packages[2].id }}</td>
-      <td>{{ packages[2].description }}</td>
-      <td>
-        <select [value]="packages[2].status" (change)="updatePackageStatus(packages[2].id, $event)">
-          <option>En tránsito</option>
-          <option>Entregado</option>
-          <option>Regresado</option>
-        </select>
-      </td>
-    </tr>
-  </tbody>
-</table>
+    <div id="map" style="height: 400px; width: 100%;"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Dirección entrega</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let pkg of packages">
+          <td>{{ pkg.id }}</td>
+          <td>{{ pkg.address }}</td>
+          <td>
+            <select [value]="pkg.status" (change)="updatePackageStatus(pkg.id, $event)">
+              <option>En transito</option>
+              <option>Entregado</option>
+              <option>Regresado</option>
+            </select>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

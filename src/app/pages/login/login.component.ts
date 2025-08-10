@@ -3,14 +3,23 @@ import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { ButtonModule } from 'primeng/button';
+import { ToastModule } from 'primeng/toast';
+import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/auth.service';
 import { Router } from '@angular/router';
-import { ToastrService } from 'ngx-toastr';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, InputTextModule, PasswordModule, ButtonModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    InputTextModule,
+    PasswordModule,
+    ButtonModule,
+    ToastModule
+  ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
 })
@@ -21,27 +30,47 @@ export class LoginComponent {
   constructor(
     private authService: AuthService,
     private router: Router,
-    private toastr: ToastrService
+    private messageService: MessageService
   ) {}
 
-  login() {
-    this.authService.login(this.username, this.password).subscribe({
-      next: (response) => {
-        const token = response.token;
-        localStorage.setItem('token', token);
+login() {
+  this.authService.login(this.username, this.password).subscribe({
+    next: (response) => {
+      const token = response.token;
+      localStorage.setItem('token', token);
 
-        const payload = JSON.parse(atob(token.split('.')[1]));
+      // Guardar el nombre de usuario para mostrarlo luego
+      localStorage.setItem('username', this.username);
+      
+      const payload = JSON.parse(atob(token.split('.')[1]));
 
-        if (payload.role === 'admin') {
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Bienvenido',
+        detail: `Hola ${this.username}`,
+        life: 2000
+      });
+
+      // Guarda el nombre de usuario
+      localStorage.setItem('username', payload.username);
+
+      if (payload.role === 'admin') {
+        setTimeout(() => {
           this.router.navigate(['/admin']);
-        } else if (payload.role === 'delivery') {
+        }, 2000);
+      } else if (payload.role === 'delivery') {
+        setTimeout(() => {
           this.router.navigate(['/delivery']);
-        }
-      },
-      error: (err) => {
-        console.error('Error en login:', err);
-        this.toastr.error('Credenciales inválidas');
+        }, 2000);
       }
-    });
-  }
+    },
+    error: () => {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Credenciales inválidas'
+      });
+    }
+  });
+}
 }

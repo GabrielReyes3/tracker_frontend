@@ -3,27 +3,24 @@ import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
 import { providePrimeNG } from 'primeng/config';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 import Aura from '@primeng/themes/aura';
 import { routes } from './app.routes';
 import { authInterceptor } from '../app/interceptors/auth.interceptor';
-import { provideToastr } from 'ngx-toastr';  // opcional, si usas toastr
+import { provideAnimations } from '@angular/platform-browser/animations';
+
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
+    provideAnimations(), // 👈 Habilita animaciones
     provideClientHydration(withEventReplay()),
-    provideHttpClient(withInterceptors([authInterceptor])), // con interceptor
+    provideHttpClient(withInterceptors([authInterceptor])),
     providePrimeNG({
-      theme: {
-        preset: Aura,
-      },
+      theme: { preset: Aura },
     }),
-    provideToastr({   // opcional, si usas ngx-toastr
-      positionClass: 'toast-top-right',
-      timeOut: 3000,
-      closeButton: true,
-      progressBar: true,
-    }),
+    MessageService
   ],
 };
