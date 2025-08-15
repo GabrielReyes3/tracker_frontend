@@ -37,22 +37,34 @@ export class DeliveryComponent implements OnInit, OnDestroy {
     this.socket = io('http://localhost:3000');
   }
 
-  async ngOnInit() {
-    if (!isPlatformBrowser(this.platformId)) {
-      console.warn('No se ejecuta geolocalización en servidor (SSR)');
-      return;
+async ngOnInit() {
+  if (!isPlatformBrowser(this.platformId)) return;
+
+  this.username = localStorage.getItem('username') || '';
+
+  const LModule = (await import('leaflet')).default;
+  L = LModule;
+
+  this.initMap();
+  this.startSendingLocation();
+  this.loadPackages();
+
+  // Escuchar paquetes nuevos o actualizados vía socket
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const userId = user.id;
+  this.socket.on(`package-update-${userId}`, (pkg: any) => {
+    const index = this.packages.findIndex(p => p.id === pkg.id);
+    if (index > -1) {
+      // Actualizar paquete existente
+      this.packages[index] = { ...this.packages[index], ...pkg };
+    } else {
+      // Agregar nuevo paquete
+      this.packages.push(pkg);
     }
+    console.log('Paquete actualizado vía socket:', pkg);
+  });
+}
 
-    this.username = localStorage.getItem('username') || '';
-
-    const LModule = (await import('leaflet')).default;
-    L = LModule;
-
-    this.initMap();
-    this.startSendingLocation();
-
-    this.loadPackages();
-  }
 
   ngOnDestroy() {
     clearInterval(this.intervalId);
@@ -134,21 +146,20 @@ export class DeliveryComponent implements OnInit, OnDestroy {
     });
   }
 
-  emitLocationViaSocket(lat: number, lng: number) {
-    if (!isPlatformBrowser(this.platformId)) return;
+emitLocationViaSocket(lat: number, lng: number) {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const username = user.username || 'Anónimo';
+  const userId = user.id;
 
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const username = user.username || 'Anónimo';
-    const userId = user.id;
+  this.socket.emit('location-update', {
+    userId,
+    username,
+    latitude: lat,
+    longitude: lng
+  });
+}
 
-    this.socket.emit('location-update', {
-      userId,
-      username,
-      latitude: lat,
-      longitude: lng
-    });
-  }
-
+  
   loadPackages() {
     if (!isPlatformBrowser(this.platformId)) return;
 

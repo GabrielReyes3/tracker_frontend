@@ -127,3 +127,18 @@ select option {
     font-size: 0.85rem;
   }
 }
+/* Colores según status */
+.status-en-transito {
+  color: #2196f3; /* azul */
+  font-weight: 600;
+}
+
+.status-entregado {
+  color: #4caf50; /* verde */
+  font-weight: 600;
+}
+
+.status-regresado {
+  color: #f44336; /* rojo */
+  font-weight: 600;
+}

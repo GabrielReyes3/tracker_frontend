@@ -1,4 +1,5 @@
-<div class="delivery-wrapper">
+
+  <div class="delivery-wrapper">
   <div class="background-overlay"></div>
 
   <div class="delivery-card">
@@ -6,7 +7,7 @@
     <app-header></app-header>
     <p>Compartiendo ubicación cada 10 segundos...</p>
 
-    <div id="map" style="height: 400px; width: 100%;"></div>
+    <div id="map" style="height: 400px; width: 100%"></div>
 
     <table>
       <thead>
@@ -21,7 +22,15 @@
           <td>{{ pkg.id }}</td>
           <td>{{ pkg.address }}</td>
           <td>
-            <select [value]="pkg.status" (change)="updatePackageStatus(pkg.id, $event)">
+            <select
+              [value]="pkg.status"
+              (change)="updatePackageStatus(pkg.id, $event)"
+              [ngClass]="{
+                'status-en-transito': pkg.status === 'En transito',
+                'status-entregado': pkg.status === 'Entregado',
+                'status-regresado': pkg.status === 'Regresado'
+              }"
+            >
               <option>En transito</option>
               <option>Entregado</option>
               <option>Regresado</option>

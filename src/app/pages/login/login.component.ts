@@ -43,7 +43,14 @@ login() {
       localStorage.setItem('username', this.username);
       
       const payload = JSON.parse(atob(token.split('.')[1]));
+// Guardar username e id en un solo objeto
+localStorage.setItem('user', JSON.stringify({
+  id: payload.id,
+  username: payload.username
+}));
 
+// También puedes mantener la variable de username sola si quieres
+localStorage.setItem('username', payload.username);
       this.messageService.add({
         severity: 'success',
         summary: 'Bienvenido',
