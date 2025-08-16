@@ -3,6 +3,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { io, Socket } from 'socket.io-client';
 import { HeaderComponent } from "../../components/header.component";
+import { environment } from '../../../environments/environment.prod'; // ✅ usar URL dinámica
 
 let L: any;
 
@@ -16,7 +17,7 @@ let L: any;
 export class DeliveryComponent implements OnInit, OnDestroy {
   username: string = '';
   private intervalId: any;
-  private socket: Socket;
+  private socket!: Socket;
 
   private map: any;
   private marker: any;
@@ -34,7 +35,10 @@ export class DeliveryComponent implements OnInit, OnDestroy {
     private http: HttpClient,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
-    this.socket = io('http://localhost:3000');
+    // ✅ Solo inicializar socket en cliente
+    if (isPlatformBrowser(this.platformId)) {
+      this.socket = io(environment.backendUrl);
+    }
   }
 
   async ngOnInit() {
@@ -50,13 +54,14 @@ export class DeliveryComponent implements OnInit, OnDestroy {
 
     this.initMap();
     this.startSendingLocation();
-
     this.loadPackages();
   }
 
   ngOnDestroy() {
-    clearInterval(this.intervalId);
-    this.socket.disconnect();
+    if (isPlatformBrowser(this.platformId)) {
+      clearInterval(this.intervalId);
+      if (this.socket) this.socket.disconnect();
+    }
   }
 
   initMap() {
@@ -80,6 +85,8 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   }
 
   startSendingLocation() {
+    if (!isPlatformBrowser(this.platformId)) return;
+
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -128,7 +135,7 @@ export class DeliveryComponent implements OnInit, OnDestroy {
       'Content-Type': 'application/json'
     });
 
-    this.http.post('http://localhost:3000/api/locations', { lat, lng }, { headers }).subscribe({
+    this.http.post(`${environment.backendUrl}/api/locations`, { lat, lng }, { headers }).subscribe({
       next: () => console.log('Ubicación enviada a backend:', lat, lng),
       error: err => console.error('Error enviando ubicación al backend:', err)
     });
@@ -141,12 +148,14 @@ export class DeliveryComponent implements OnInit, OnDestroy {
     const username = user.username || 'Anónimo';
     const userId = user.id;
 
-    this.socket.emit('location-update', {
-      userId,
-      username,
-      latitude: lat,
-      longitude: lng
-    });
+    if (this.socket) {
+      this.socket.emit('location-update', {
+        userId,
+        username,
+        latitude: lat,
+        longitude: lng
+      });
+    }
   }
 
   loadPackages() {
@@ -157,7 +166,7 @@ export class DeliveryComponent implements OnInit, OnDestroy {
       'Authorization': `Bearer ${token}`
     });
 
-    this.http.get<{ id: number; address: string; status: string }[]>('http://localhost:3000/api/packages/my', { headers }).subscribe({
+    this.http.get<{ id: number; address: string; status: string }[]>(`${environment.backendUrl}/api/packages/my`, { headers }).subscribe({
       next: (data) => {
         console.log('Paquetes cargados:', data);
         this.packages = data;
@@ -185,7 +194,7 @@ export class DeliveryComponent implements OnInit, OnDestroy {
         'Content-Type': 'application/json'
       });
 
-      this.http.put('http://localhost:3000/api/packages/status', { packageId: pkgId, status: newStatus }, { headers }).subscribe({
+      this.http.put(`${environment.backendUrl}/api/packages/status`, { packageId: pkgId, status: newStatus }, { headers }).subscribe({
         next: () => console.log('Estado actualizado en backend'),
         error: err => console.error('Error al actualizar estado en backend:', err)
       });

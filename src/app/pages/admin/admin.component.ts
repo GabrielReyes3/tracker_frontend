@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { io } from 'socket.io-client';
 
 let L: any;
@@ -16,7 +16,7 @@ export class AdminComponent implements OnInit {
   selectedUserId: string | null = null;
 
   private map: any;
-  private socket = io('http://localhost:3000');
+  private socket: any;
   private allMarkers: { [userId: string]: any } = {};
   private allPaths: { [userId: string]: [number, number][] } = {};
   private allPolylines: { [userId: string]: any } = {};
@@ -30,11 +30,20 @@ export class AdminComponent implements OnInit {
   ];
   private colorIndex = 0;
 
-  async ngOnInit(): Promise<void> {
-    if (typeof window === 'undefined') return;
+  constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
 
+  async ngOnInit(): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) {
+      // 🚫 SSR: No ejecutar nada que use window, document, navigator...
+      return;
+    }
+
+    // ✅ Cliente: Cargar Leaflet dinámicamente
     const leaflet = await import('leaflet');
     L = leaflet;
+
+    // ✅ Cliente: Conectar Socket.io al backend en producción
+    this.socket = io('https://tracker-backend.fly.dev');
 
     this.initMap();
     this.listenForLocations();
@@ -90,6 +99,8 @@ export class AdminComponent implements OnInit {
   }
 
   private updateDisplayedRoute(userId: string): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
     // Limpia marcador anterior
     if (this.displayedMarker) {
       this.map.removeLayer(this.displayedMarker);
